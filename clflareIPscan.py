@@ -16,43 +16,12 @@ print(O+'''
 \t  version Faster (using threading)
 #'''+GR)
 
-def update():
-		statement = f"[{R}!{GR}] {O}Note ip ranges updating weekly\n {G}Do you want to update ip ranges ?{G} "
-		for chr in statement:
-			sys.stdout.write(chr)
-			sys.stdout.flush()
-			time.sleep(0.1)
-		decision = input(f'[y/n]\n< :{GR}')
-		if decision.upper() == 'Y':
-			os.system('rm .firstusage.log')
-		else:return 0
-		return decision.upper()
-		
-ipdict ={}
-def createlog():
-	if os.path.exists('.firstusage.log'):
-		arg = 'r'
-		updating = update()
-		if updating =='Y':
-			arg = 'a+'
-			status = '[*] updating'
-	else:
-		status = 'Welcome Dear !'
-		arg = 'a+'
-	with open('.firstusage.log',arg) as f:
-			if len(f.read()) < 1:
-				input(f'-{G}{status}{GR}\n{R}[!] switch to wifi or data connection to update ipranges list and click enter {GR}')
-				url ='https://www.cloudflare.com/ips-v4'
-				req = requests.get(url).text
-				ranges = req.split()
-				
-				input(f'{G}[#]Turn off wifi or switch to 0 balance sim \n so then tap Enter to continue ')
-				f.write(str(ranges))
-			else:
-				with open('.firstusage.log',arg) as f:
-					ranges = f.read().replace('[','').replace(']','').replace('\'','').split(',')
-	return ranges
-
+def cidrs():
+	cidrslist =[]
+	with open('ipv4.txt') as file:
+		for cidr in file.readlines():
+			cidrslist.append(cidr.strip('\n'))
+	return cidrslist
 
 def save(x):
 	with open('wrCloudflrIp.txt','a') as fl:
@@ -108,25 +77,24 @@ def payloadsnd(ip):
 	
 def Main():
 	ipdict={}
-	ranges = createlog()
+	ranges = cidrs()
 	for k,v in enumerate(ranges):
 			#clr = random.choice([G,GR,O])
 			ipdict[k]=v
-	for choose in range(len(ipdict)):
-		iprange=[]
+	iprange=[]
+	for choose in range(len(ipdict)):	
 		cidr=ipdict[choose]	
-		print(cidr)
 		for ip in ipcalc.Network(cidr):
 				iprange.append(ip)
-		for index in range(len(iprange)):			
-					try:
-						print("{}[INFO] Probing... ({}/{}) [{}]{}".format(
-						R,index+1,len(iprange),iprange[index],GR))
-						sc=threading.Thread(target=scanner,args=(iprange[index],))
-						sc.start()
-					except KeyboardInterrupt:
-						print('{}Scan aborted by user!{}'.format(R,GR))
-						break
+	for index in range(len(iprange)):			
+		try:
+			print("{}[INFO] Probing... ({}/{}) [{}]{}".format(
+			R,index+1,len(iprange),iprange[index],GR))
+			sc=threading.Thread(target=scanner,args=(iprange[index],))
+			sc.start()
+		except KeyboardInterrupt:
+			print('{}Scan aborted by user!{}'.format(R,GR))
+			break
 						
 if __name__=="__main__":
 	Main()
