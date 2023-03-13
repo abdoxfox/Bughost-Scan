@@ -1,7 +1,10 @@
 import ipcalc
-import socket,random,re
-import threading,configparser
-import requests,sys,time,os
+import socket,random
+import threading
+import sys
+import argparse,queue
+import requests
+
 bg=''
 
 G = bg+'\033[32m'
@@ -13,88 +16,82 @@ R = bg+'\033[31m'
 print(O+'''
 \tWEBSOCKET SCANNER
 \tBy : ABDOXFOX
-\t  version Faster (using threading)
-#'''+GR)
-
-def cidrs():
-	cidrslist =[]
-	with open('ipv4.txt') as file:
-		for cidr in file.readlines():
-			cidrslist.append(cidr.strip('\n'))
-	return cidrslist
-
-def save(x):
-	with open('wrCloudflrIp.txt','a') as fl:
-		fl.write(str(x)+'\n')
-		fl.close()
+\tUpdate 13/03/2022
+'''+GR)
+class cdnscanner:
+	def __init__(self):
+		pass
+	
+	
+	def fetchqueue(self):
+		self.progress = 1
+		while True:
+			ip = str(self.queuelst.get())
+			sys.stdout.write(f'scaning...{ip} ==> progressing....  ({self.progress}/{self.len_ips})\r')
+			sys.stdout.flush()
+			self.Sendrequest(ip)
+		self.queuelst.task_done()
 		
-def scanner(host):
-	sock=socket.socket()
-	sock.settimeout(2)
-	try:
-		sock.connect((str(host),80))
-		payload='GET / HTTP/1.1\r\nHost: {}\r\n\r\n'.format(host)
-		sock.send(payload.encode())
-		response=sock.recv(1024).decode('utf-8','ignore')
-		for data in response.split('\r\n'):
-			data=data.split(':')
-			if re.match(r'HTTP/\d(\.\d)?' ,data[0]):
-				print('response status : {}{}{}'.format(O,data[0],GR))
-			if data[0]=='Server':
-				try:
-					if data[1] ==' cloudflare':
-						print('{}server : {}\nFound working {}..'.format(G,host,GR))
-						save(f'{host} === opened')
-						payloadsnd(host)
-				except Exception as e:
-					print(e)
-	except Exception as e:print(e)
-
-def auto_replace(server,ip):
-	packet = server.recv(1024).decode('utf-8','ignore')
-	status = packet.split('\n')[0]
-	if re.match(r'HTTP/\d(\.\d)? 101',status):
-		print(f'{O}[TCP] response : {G}{status}{GR}')
-		save(f'{ip} response ==== {status}')
-	else:
-		if re.match(r'HTTP/\d(\.\d)? \d\d\d ',status):
-			server.send(b'HTTP/1.1 200 Connection established\r\n\r\n')
-			print(f'{O}[TCP] response : {R}{status}{GR}')
-			return auto_replace(server,ip)
-
-def payloadsnd(ip):
 	
-	config = configparser.ConfigParser()
-	config.read_file(open('configfile.ini'))
-	domain = config['websocket']['custom_domain']
-	port =80
-	sc=socket.socket()
-	sc.connect((str(ip),port))
-	payload=f'GET / HTTP/1.0[crlf]Host: {domain}[crlf][crlf]'
-	payload=payload.replace('[crlf]','\r\n')
-	sc.send(payload.encode())
-	auto_replace(sc,ip) 
-	
-def Main():
-	ipdict={}
-	ranges = cidrs()
-	for k,v in enumerate(ranges):
-			#clr = random.choice([G,GR,O])
-			ipdict[k]=v
-	iprange=[]
-	for choose in range(len(ipdict)):	
-		cidr=ipdict[choose]	
-		for ip in ipcalc.Network(cidr):
-				iprange.append(ip)
-	for index in range(len(iprange)):			
+	def Sendrequest(self, ip):
+		url = (f'https://{ip}' if self.port == 443 else f'http://{ip}:{self.port}')
 		try:
-			print("{}[INFO] Probing... ({}/{}) [{}]{}".format(
-			R,index+1,len(iprange),iprange[index],GR))
-			sc=threading.Thread(target=scanner,args=(iprange[index],))
-			sc.start()
-		except KeyboardInterrupt:
-			print('{}Scan aborted by user!{}'.format(R,GR))
-			break
-						
-if __name__=="__main__":
-	Main()
+			if self.proxy:
+				proxyhost,port = self.proxy.split(':')[0],int(self.proxy.split(':')[1])
+				proxy = {'http' : f'http://{proxyhost}:{port}', 'https' : 'http://{proxyhost}:{port}'}
+				req = requests.get(url,proxy,timeout=7,allow_redirects=False)
+			
+			else:
+				req = requests.get(url,timeout=7,allow_redirects=False)
+			status = req.status_code
+			server = req.headers['server']
+			sys.stdout.write(f'{G}{ip}\t{status}\t{server}{GR}\n')
+			
+			
+		except Exception as e:
+			pass
+		self.progress  += 1
+	
+	def main(self):
+		
+		cidrs = open('ipv4.txt','r').read().split()
+		self.all_ips=[]
+		for every in cidrs:	
+			for ip in ipcalc.Network(every):
+					self.all_ips.append(ip)
+		self.queuelst = queue.Queue()
+		for ip in self.all_ips:
+			self.queuelst.put(ip)
+		self.len_ips = len(self.all_ips)
+		self.threadsrun()
+		
+	def threadsrun(self):
+		for _ in range(self.threads):
+				thread = threading.Thread(target=self.fetchqueue)
+				thread.start()
+		self.queuelst.join()
+		time.sleep(2)
+		
+def parseargs():
+		parser = argparse.ArgumentParser(
+			formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=52))
+		parser.add_argument('-t','--threads',help='num of threads',dest='threads',type=int,default=10)
+		parser.add_argument('-p','--port',help='port to scan',dest='port',type=int,default=80)
+		parser.add_argument('-P','--proxy',help='proxy ip:port ex: 12.34.56.6:80',dest='proxy',type=str)
+		
+	
+		args = parser.parse_args()
+		
+		if len(sys.argv) <= 1:
+			parser.print_help()
+			
+			return
+		cdnscan=cdnscanner()
+		cdnscan.threads = args.threads
+		cdnscan.port = args.port
+		cdnscan.proxy = args.proxy
+		
+		cdnscan.main()
+		
+		
+parseargs()
