@@ -20,7 +20,9 @@ print(O+'''
 '''+GR)
 class cdnscanner:
 	def __init__(self):
-		pass
+		self.queuelst = queue.Queue()
+		self.request = requests.get
+		self.thread = threading.Thread
 	
 	
 	def fetchqueue(self):
@@ -39,10 +41,10 @@ class cdnscanner:
 			if self.proxy:
 				proxyhost,port = self.proxy.split(':')[0],int(self.proxy.split(':')[1])
 				proxy = {'http' : f'http://{proxyhost}:{port}', 'https' : 'http://{proxyhost}:{port}'}
-				req = requests.get(url,proxy,timeout=7,allow_redirects=False)
+				req = self.request(url,proxy,timeout=7,allow_redirects=False)
 			
 			else:
-				req = requests.get(url,timeout=7,allow_redirects=False)
+				req = self.request(url,timeout=7,allow_redirects=False)
 			status = req.status_code
 			server = req.headers['server']
 			sys.stdout.write(f'{G}{ip}\t{status}\t{server}{GR}\n')
@@ -59,7 +61,7 @@ class cdnscanner:
 		for every in cidrs:	
 			for ip in ipcalc.Network(every):
 					self.all_ips.append(ip)
-		self.queuelst = queue.Queue()
+		
 		for ip in self.all_ips:
 			self.queuelst.put(ip)
 		self.len_ips = len(self.all_ips)
@@ -67,10 +69,10 @@ class cdnscanner:
 		
 	def threadsrun(self):
 		for _ in range(self.threads):
-				thread = threading.Thread(target=self.fetchqueue)
+				thread = self.thread(target=self.fetchqueue)
 				thread.start()
 		self.queuelst.join()
-		
+
 		
 def parseargs():
 		parser = argparse.ArgumentParser(
