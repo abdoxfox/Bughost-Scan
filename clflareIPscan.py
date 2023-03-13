@@ -1,9 +1,9 @@
 import ipcalc
-import socket,random
 import threading
 import sys
 import argparse,queue
 import requests
+import time
 
 bg=''
 
@@ -18,21 +18,23 @@ print(O+'''
 \tBy : ABDOXFOX
 \tUpdate 13/03/2022
 '''+GR)
+
 class cdnscanner:
 	def __init__(self):
-		self.queuelst = queue.Queue()
+		self.queue = queue.Queue()
 		self.request = requests.get
 		self.thread = threading.Thread
+		self.total =1
+		self.progress = 1
 	
 	
 	def fetchqueue(self):
-		self.progress = 1
 		while True:
-			ip = str(self.queuelst.get())
-			sys.stdout.write(f'scaning...{ip} ==> progressing....  ({self.progress}/{self.len_ips})\r')
+			ip = str(self.queue.get())
+			sys.stdout.write(f'scaning...{ip} ==> progressing....  ({self.progress}/{self.total})\r')
 			sys.stdout.flush()
 			self.Sendrequest(ip)
-		self.queuelst.task_done()
+		self.queue.task_done()
 		
 	
 	def Sendrequest(self, ip):
@@ -55,23 +57,23 @@ class cdnscanner:
 		self.progress  += 1
 	
 	def main(self):
-		
+		sys.stdout.write(f'{O}Coverting ip_ranges to single IPs ...\r')
+		sys.stdout.flush()	
 		cidrs = open('ipv4.txt','r').read().split()
-		self.all_ips=[]
 		for every in cidrs:	
-			for ip in ipcalc.Network(every):
-					self.all_ips.append(ip)
-		
-		for ip in self.all_ips:
-			self.queuelst.put(ip)
-		self.len_ips = len(self.all_ips)
+		    for ip in ipcalc.Network(every):
+		    	self.queue.put(ip)
+		    	self.total += 1
+		sys.stdout.write(f'{O}Done √ Scaning starts {GR}\r')
+		sys.stdout.flush()
+		time.sleep(2)
 		self.threadsrun()
 		
 	def threadsrun(self):
 		for _ in range(self.threads):
 				thread = self.thread(target=self.fetchqueue)
 				thread.start()
-		self.queuelst.join()
+		self.queue.join()
 
 		
 def parseargs():
@@ -95,5 +97,5 @@ def parseargs():
 		
 		cdnscan.main()
 		
-		
-parseargs()
+if __name__ =='__main__':	
+	parseargs()
