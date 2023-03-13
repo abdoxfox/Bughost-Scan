@@ -16,7 +16,7 @@ R = bg+'\033[31m'
 print(O+'''
 \tWEBSOCKET SCANNER
 \tBy : ABDOXFOX
-\tUpdate 13/03/2022
+\tUpdate 13/03/2023
 '''+GR)
 
 class cdnscanner:
