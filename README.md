@@ -10,6 +10,4 @@ pip install ipcalc
 pip install requests
 
 
-# output result :
 
-Results saved in file (wrCloudflareIp.txt)
