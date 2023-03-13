@@ -70,7 +70,7 @@ class cdnscanner:
 				thread = threading.Thread(target=self.fetchqueue)
 				thread.start()
 		self.queuelst.join()
-		time.sleep(2)
+		
 		
 def parseargs():
 		parser = argparse.ArgumentParser(
