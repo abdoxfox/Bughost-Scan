@@ -6,17 +6,15 @@ import requests
 import time
 
 bg=''
-
 G = bg+'\033[32m'
 O = bg+'\033[33m'
 GR = bg+'\033[37m'
 R = bg+'\033[31m'
 
-
 print(O+'''
 \tWEBSOCKET SCANNER
 \tBy : ABDOXFOX
-\tUpdate 13/03/2023
+\tUpdate 13/03/2022
 '''+GR)
 
 class cdnscanner:
@@ -27,7 +25,6 @@ class cdnscanner:
 		self.total =1
 		self.progress = 1
 	
-	
 	def fetchqueue(self):
 		while True:
 			ip = str(self.queue.get())
@@ -35,23 +32,26 @@ class cdnscanner:
 			sys.stdout.flush()
 			self.Sendrequest(ip)
 		self.queue.task_done()
-		
-	
+				
 	def Sendrequest(self, ip):
 		url = (f'https://{ip}' if self.port == 443 else f'http://{ip}:{self.port}')
 		try:
 			if self.proxy:
 				proxyhost,port = self.proxy.split(':')[0],int(self.proxy.split(':')[1])
 				proxy = {'http' : f'http://{proxyhost}:{port}', 'https' : 'http://{proxyhost}:{port}'}
-				req = self.request(url,proxy,timeout=7,allow_redirects=False)
-			
+				req = self.request(url,proxy,timeout=7,allow_redirects=False)			
 			else:
 				req = self.request(url,timeout=7,allow_redirects=False)
 			status = req.status_code
 			server = req.headers['server']
-			sys.stdout.write(f'{G}{ip}\t{status}\t{server}{GR}\n')
-			
-			
+			response = f'{G}{ip}\t{status}\t{server}{GR}\r\n'
+			sys.stdout.write(response)
+			sys.stdout.flush()
+			if self.output :
+				with open(self.output,'a') as file:
+					file.write(response)
+					file.close()
+				
 		except Exception as e:
 			pass
 		self.progress  += 1
@@ -82,10 +82,9 @@ def parseargs():
 		parser.add_argument('-t','--threads',help='num of threads',dest='threads',type=int,default=10)
 		parser.add_argument('-p','--port',help='port to scan',dest='port',type=int,default=80)
 		parser.add_argument('-P','--proxy',help='proxy ip:port ex: 12.34.56.6:80',dest='proxy',type=str)
-		
+		parser.add_argument('-o','--output',help='save output in file',dest='output',type=str)
 	
-		args = parser.parse_args()
-		
+		args = parser.parse_args()		
 		if len(sys.argv) <= 1:
 			parser.print_help()
 			
@@ -94,6 +93,7 @@ def parseargs():
 		cdnscan.threads = args.threads
 		cdnscan.port = args.port
 		cdnscan.proxy = args.proxy
+		cdnscan.output = args.output
 		
 		cdnscan.main()
 		
