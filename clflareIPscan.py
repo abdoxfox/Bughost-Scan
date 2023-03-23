@@ -44,7 +44,7 @@ class cdnscanner:
 				req = self.request(url,timeout=7,allow_redirects=False)
 			status = req.status_code
 			server = req.headers['server']
-			response = f'{G}{ip}\t{status}\t{server}{GR}\r\n'
+			response = f'\n{G}{ip}\t{status}\t{server}{GR}\r\n'
 			sys.stdout.write(response)
 			sys.stdout.flush()
 			if self.output :
