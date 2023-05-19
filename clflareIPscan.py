@@ -85,7 +85,7 @@ def parseargs():
 		parser.add_argument('-o','--output',help='save output in file',dest='output',type=str)
 	
 		args = parser.parse_args()		
-		if args.help:
+		if not args:
 			parser.print_help()
 			
 			return
