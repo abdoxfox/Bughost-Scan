@@ -85,10 +85,10 @@ def parseargs():
 		parser.add_argument('-o','--output',help='save output in file',dest='output',type=str)
 	
 		args = parser.parse_args()		
-		if not args:
-			parser.print_help()
+	
 			
-			return
+			
+			
 		cdnscan=cdnscanner()
 		cdnscan.threads = args.threads
 		cdnscan.port = args.port
